@@ -1,6 +1,7 @@
 const express = require('express')
 const { MongoClient } = require('mongodb')
-const cors = require('cors')
+const cors = require('cors');
+const { query } = require('express');
 require('dotenv').config()
 const app = express();
 const port = process.env.port || 5000;
@@ -16,17 +17,61 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         await client.connect()
+        //order client 
+        const clientData = client.db('tourAddTravel');
+        const clientOrderCollection = clientData.collection('ClientOrder')
+        //offer book mongodb 
         const database = client.db('tourAddTravel');
-        const toursCollection = database.collection('tours');
+        const offerCollection = database.collection('offers');
 
-        //Post Api
+        //tour book  mongodb
+        const databases = client.db('tourAddTravel');
+        const toursCollection = databases.collection('TourBook');
+
+
+        //Get Api offer
+        app.get('/offers', async (req, res) => {
+            const cursor = offerCollection.find({})
+            const offers = await cursor.toArray();
+            res.send(offers);
+        })
+        //get Api tour 
+        app.get('/tour', async (req, res) => {
+            const cursors = toursCollection.find({})
+            const tour = await cursors.toArray();
+            res.send(tour);
+        })
+
+
+        //Post sadaron data Api
         app.post('/tourShiping', async (req, res) => {
-            const tours = req.body;
-            console.log('hit the console api', tours);
+            const offers = req.body;
+            // console.log('hit the console api', tours);
 
-            const result = await toursCollection.insertOne(tours)
-            console.log(result);
+            const result = await toursCollection.insertOne(offers)
+            // console.log(result);
             res.json(result)
+        })
+        // post all time client data store 
+
+        app.get('/allorder', async (req, res) => {
+            let query = {};
+            const email = req.query.email;
+            if (email) {
+                query = { email: email };
+
+            }
+            const cursor = clientOrderCollection.find(query);
+            const ClientOrder = await cursor.toArray();
+            res.json(ClientOrder);
+
+        })
+        app.post('/allOrder', async (req, res) => {
+            const allOrder = req.body;
+            allOrder.createdAt = new Date();
+            // console.log('hit the allOrder', allOrder);
+            const results = await clientOrderCollection.insertOne(allOrder)
+            res.json(results)
         })
 
     }
@@ -35,8 +80,13 @@ async function run() {
     }
 
 }
-
 run().catch(console.dir);
+
+
+
+
+
+
 
 
 
